@@ -11,6 +11,7 @@ import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -32,6 +33,7 @@ public class ENode {
     public static final String ENODE_URL =
             "https://enode-api.sandbox.enode.io/batteries/"+BATTERY_ID;
     public static String ENODE_ACCESS_TOKEN = "";
+    public static JSONArray batteriesList;
 
     private static RequestQueue requestQueue;
     public static JSONObject datas = null;

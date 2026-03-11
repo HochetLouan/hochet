@@ -8,11 +8,15 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
+import org.json.JSONArray;
+
+import iut.projet.hochet.ENode;
 import iut.projet.hochet.databinding.FragmentDevicesBinding;
 
-public class DevicesFragment extends Fragment {
+public class DevicesFragment extends Fragment implements Observer<ENode> {
 
     private FragmentDevicesBinding binding;
 
@@ -27,6 +31,41 @@ public class DevicesFragment extends Fragment {
         final TextView textView = binding.textSlideshow;
         slideshowViewModel.getText().observe(getViewLifecycleOwner(), textView::setText);
         return root;
+    }
+    @Override
+    public void onChanged(ENode eNode) {
+        JSONArray list = ENode.batteriesList;
+        if (list != null) {
+            buttonsLayout.removeAllViews();
+
+            try {
+                for (int i = 0; i < list.length(); i++) {
+                    JSONObject battery = list.getJSONObject(i);
+                    String id = battery.getString("id");
+                    String tempName = "Batterie " + (i + 1);
+                    if (battery.has("information") && !battery.isNull("information")) {
+                        tempName = battery.getJSONObject("information").optString("siteName", tempName);
+                    }
+                    final String finalName = tempName;
+                    Button btn = new Button(getContext());
+                    btn.setText(finalName + "\n(" + id.substring(0, 8) + ")");
+                    btn.setOnClickListener(v -> {
+                        ENode.selectedDeviceId = id;
+                        ((MainActivity) getActivity()).enode.fetchDatas(id);
+                    });
+                    buttonsLayout.addView(btn);
+                }
+            } catch (JSONException e) {
+                Log.e("SlideshowFragment", "Erreur lecture liste: " + e.getMessage());
+            }
+        }
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        ((MainActivity) getActivity()).enode.removeObserver(this);
+        binding = null;
     }
 
     @Override

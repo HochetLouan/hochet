@@ -31,9 +31,10 @@ public class ENode {
     private static final String CLIENT_SECRET = "218fa2b32225c45b994f68a28a3422a128fcedd2";
     public static final String ENODE_URL_AUTH = "https://oauth.sandbox.enode.io/oauth2/token";
     public static final String ENODE_URL =
-            "https://enode-api.sandbox.enode.io/batteries/"+BATTERY_ID;
+            "https://enode-api.sandbox.enode.io/batteries/";
     public static String ENODE_ACCESS_TOKEN = "";
     public static JSONArray batteriesList;
+    public static String selectedDeviceId;
 
     private static RequestQueue requestQueue;
     public static JSONObject datas = null;
@@ -115,7 +116,7 @@ public class ENode {
     public void fetchDatas() {
         Log.d("ENode","fetching datas");
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET,
-                ENode.ENODE_URL, null,
+                ENode.ENODE_URL + selectedDeviceId, null,
                 response -> {
                     Log.d("ENode","datas received : " + response);
                     datas = response;
@@ -147,7 +148,7 @@ public class ENode {
         }
 
         // Endpoint selon le Swagger
-        String url = ENODE_URL + "/operation-mode";
+        String url = ENODE_URL + selectedDeviceId + "/operation-mode";
 
         JSONObject jsonBody = new JSONObject();
         try {
@@ -171,6 +172,55 @@ public class ENode {
                 Map<String, String> headers = new HashMap<>();
                 headers.put("Authorization", "Bearer " + ENODE_ACCESS_TOKEN);
                 headers.put("Content-Type", "application/json");
+                return headers;
+            }
+        };
+
+        requestQueue.add(request);
+    }
+    public void fetchBatteries() {
+
+        if (ENODE_ACCESS_TOKEN.isEmpty()) {
+            Log.e("ENode", "Access token is empty, cannot fetch batteries.");
+            return;
+        }
+
+        String url = "https://enode-api.sandbox.enode.io/batteries?pageSize=50";
+
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.GET,
+                url,
+                null,
+                response -> {
+
+                    Log.d("ENode", "Batteries response: " + response);
+
+                    try {
+
+                        // La liste est dans "data"
+                        batteriesList = response.getJSONArray("data");
+
+                        Log.d("ENode", "Batteries found: " + batteriesList.length());
+
+                        synchronized (this) {
+                            liveData.setValue(this);
+                        }
+
+                    } catch (JSONException e) {
+                        Log.e("ENode", "JSON parsing error: " + e.getMessage());
+                    }
+
+                },
+                error -> Log.e("ENode", "Error fetching batteries: " + error.toString())
+        ) {
+
+            @Override
+            public Map<String, String> getHeaders() {
+
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Authorization", "Bearer " + ENODE_ACCESS_TOKEN);
+                headers.put("Content-Type", "application/json");
+
                 return headers;
             }
         };
